@@ -9,16 +9,18 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
 driver = None  # Global variable to hold the browser instance
 processed_files = set()  # Set to store the names of processed files
+save_path = ""  # Global variable to store the save path
 
 def open_mic_monster():
     global driver
     url = "https://micmonster.com/"
     try:
         options = webdriver.ChromeOptions()
-        options.binary_location = "C:/Program Files/Google/Chrome/Application/chrome.exe"  # Path to Chrome executable 
+        options.binary_location = "C:/Program Files/Google/Chrome/Application/chrome.exe"  # Path to Chrome executable
         driver = webdriver.Chrome(options=options)  # Let chromedriver automatically locate the executable
         driver.get(url)
         messagebox.showinfo("MicMonster Opened", "MicMonster website has been opened in Google Chrome.")
@@ -83,7 +85,6 @@ def copy_text():
         root.clipboard_append(text)
         messagebox.showinfo("Text Copied", "The text has been copied to the clipboard.")
 
-
 def insert_text_into_website(text):
     if text == "":
         messagebox.showwarning("Empty Text", "Please enter some text.")
@@ -93,44 +94,67 @@ def insert_text_into_website(text):
         try:
             text_area = driver.find_element(By.CSS_SELECTOR, ".text-area")
             text_area.clear()  # Clear any existing text
-            
+
             # Introduce a small delay to allow the web page to load properly
             time.sleep(1)
-            
+
             text_area.send_keys(text)  # Insert the text into the web text box
-            
+
             # Wait for the "Generating..." span to disappear
             WebDriverWait(driver, 10).until(
                 EC.invisibility_of_element_located((By.XPATH, "//span[text()='Generating...']"))
             )
-            
+
             # Wait for the "Generate" button to become clickable and visible
             generate_button = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, "//span[@class='primary-text' and text()='Generate']"))
             )
-            
+
             # Click on the "Generate" button
             generate_button.click()
-            
+
             # Wait for the page to refresh
             page_refresh_delay = int(page_refresh_entry.get())
             time.sleep(page_refresh_delay)  # Adjust the delay as needed
-            
+
             # Find and click the download button
             download_button = driver.find_element(By.XPATH, "//button[contains(., 'Download')]")
             download_button.click()
-            
+
             # Wait for the download to complete
             download_delay = int(download_delay_entry.get())
             time.sleep(download_delay)  # Adjust the delay as needed
-            
+
+            # Rename the downloaded file
+            rename_file(text)
+
             # Refresh the page
             driver.refresh()
-            
+
             messagebox.showinfo("Text Inserted", "The text has been inserted into the website.")
+        except NoSuchElementException as e:
+            print("Element Not Found:", str(e))
+            messagebox.showerror("Error", "Failed to locate elements on the website.")
         except Exception as e:
             print("Exception:", str(e))
             messagebox.showerror("Error", "Failed to insert text into the website.")
+
+def rename_file(text):
+    try:
+        download_folder = os.path.expanduser("~") + "/Downloads/"
+        latest_file = max([download_folder + f for f in os.listdir(download_folder)], key=os.path.getctime)
+        file_name, file_ext = os.path.splitext(latest_file)
+        new_file_name = text + file_ext
+        new_file_path = os.path.join(save_path, new_file_name)
+        os.rename(latest_file, new_file_path)
+    except Exception as e:
+        print("Exception:", str(e))
+
+def select_save_path():
+    global save_path
+    save_path = filedialog.askdirectory()
+    path_text_box.delete(1.0, tk.END)
+    path_text_box.insert(tk.END, save_path)
 
 # Create the main window
 root = tk.Tk()
@@ -170,6 +194,18 @@ download_delay_label.pack(side=tk.LEFT)
 download_delay_entry = tk.Entry(sleep_frame)
 download_delay_entry.pack(side=tk.LEFT)
 download_delay_entry.insert(tk.END, "10")  # Set a default value
+
+# Create a frame for the save path section
+save_path_frame = tk.Frame(root)
+save_path_frame.pack()
+
+# Create the "Select Save Path" button
+save_path_button = tk.Button(save_path_frame, text="Select Save Path", command=select_save_path)
+save_path_button.pack(side=tk.LEFT)
+
+# Create the save path text box
+path_text_box = tk.Text(save_path_frame, height=1)
+path_text_box.pack(side=tk.LEFT)
 
 # Start the GUI event loop
 root.mainloop()
