@@ -11,6 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 driver = None  # Global variable to hold the browser instance
+processed_files = set()  # Set to store the names of processed files
 
 def open_mic_monster():
     global driver
@@ -26,38 +27,52 @@ def open_mic_monster():
         return
 
 def insert_text_from_file():
-    file_path = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt"), ("Word Documents", "*.docx"), ("PDF Files", "*.pdf")])
-    if file_path:
-        extension = os.path.splitext(file_path)[1].lower()
-        try:
-            if extension == ".txt":
-                with open(file_path, "r") as file:
-                    text = file.read()
-                    text_box.delete("1.0", tk.END)  # Clear the existing text
-                    text_box.insert(tk.END, text)  # Insert the file contents into the text box
-                    messagebox.showinfo("File Read", "Text file contents have been inserted into the text box.")
-                    insert_text_into_website(text)  # Insert the text into the website
-            elif extension == ".docx":
-                doc = docx.Document(file_path)
-                paragraphs = [paragraph.text for paragraph in doc.paragraphs]
-                text = "\n".join(paragraphs)
+    folder_path = filedialog.askdirectory()
+    if folder_path:
+        files = get_files_in_folder(folder_path)
+        for file_path in files:
+            if file_path not in processed_files:
+                process_file(file_path)
+                processed_files.add(file_path)
+    else:
+        messagebox.showwarning("No Folder Selected", "No folder was selected.")
+
+def get_files_in_folder(folder_path):
+    files = []
+    for root, dirs, filenames in os.walk(folder_path):
+        for filename in filenames:
+            files.append(os.path.join(root, filename))
+    return files
+
+def process_file(file_path):
+    extension = os.path.splitext(file_path)[1].lower()
+    try:
+        if extension == ".txt":
+            with open(file_path, "r") as file:
+                text = file.read()
                 text_box.delete("1.0", tk.END)  # Clear the existing text
                 text_box.insert(tk.END, text)  # Insert the file contents into the text box
-                messagebox.showinfo("File Read", "DOCX file contents have been inserted into the text box.")
+                messagebox.showinfo("File Read", "Text file contents have been inserted into the text box.")
                 insert_text_into_website(text)  # Insert the text into the website
-            elif extension == ".pdf":
-                with open(file_path, "rb") as file:
-                    pdf = PyPDF2.PdfReader(file)
-                    pages = [page.extract_text() for page in pdf.pages]
-                    text = "\n".join(pages)
-                    text_box.delete("1.0", tk.END)  # Clear the existing text
-                    text_box.insert(tk.END, text)  # Insert the file contents into the text box
-                    messagebox.showinfo("File Read", "PDF file contents have been inserted into the text box.")
-                    insert_text_into_website(text)  # Insert the text into the website
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-    else:
-        messagebox.showwarning("No File Selected", "No file was selected.")
+        elif extension == ".docx":
+            doc = docx.Document(file_path)
+            paragraphs = [paragraph.text for paragraph in doc.paragraphs]
+            text = "\n".join(paragraphs)
+            text_box.delete("1.0", tk.END)  # Clear the existing text
+            text_box.insert(tk.END, text)  # Insert the file contents into the text box
+            messagebox.showinfo("File Read", "DOCX file contents have been inserted into the text box.")
+            insert_text_into_website(text)  # Insert the text into the website
+        elif extension == ".pdf":
+            with open(file_path, "rb") as file:
+                pdf = PyPDF2.PdfReader(file)
+                pages = [page.extract_text() for page in pdf.pages]
+                text = "\n".join(pages)
+                text_box.delete("1.0", tk.END)  # Clear the existing text
+                text_box.insert(tk.END, text)  # Insert the file contents into the text box
+                messagebox.showinfo("File Read", "PDF file contents have been inserted into the text box.")
+                insert_text_into_website(text)  # Insert the text into the website
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
 
 def copy_text():
     text = text_box.get("1.0", tk.END)
@@ -131,7 +146,7 @@ mic_monster_button = tk.Button(root, text="Open MicMonster", command=open_mic_mo
 mic_monster_button.pack()
 
 # Create the "Insert Text from File" button
-insert_button = tk.Button(root, text="Insert Text from File", command=insert_text_from_file)
+insert_button = tk.Button(root, text="Insert Text from Folder", command=insert_text_from_file)
 insert_button.pack()
 
 # Create the "Copy Text" button
