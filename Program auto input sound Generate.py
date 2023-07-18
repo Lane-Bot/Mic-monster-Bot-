@@ -25,15 +25,6 @@ def open_mic_monster():
         messagebox.showerror("Error", "Failed to open MicMonster website.")
         return
 
-def close_browser():
-    global driver
-    if driver:
-        driver.quit()
-        messagebox.showinfo("Browser Closed", "The browser has been closed.")
-        driver = None
-    else:
-        messagebox.showinfo("No Browser Instance", "There is no open browser instance.")
-
 def insert_text_from_file():
     file_path = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt"), ("Word Documents", "*.docx"), ("PDF Files", "*.pdf")])
     if file_path:
@@ -114,7 +105,7 @@ def insert_text_into_website(text):
             download_button.click()
             
              # Wait for the download to complete
-            time.sleep(20)  # Adjust the delay as needed
+            time.sleep(10)  # Adjust the delay as needed
             
             # Refresh the page
             driver.refresh()
@@ -141,9 +132,6 @@ text_box.pack(pady=30)
 mic_monster_button = tk.Button(root, text="Open MicMonster", command=open_mic_monster)
 mic_monster_button.pack()
 
-# Create the "Close Browser" button
-close_browser_button = tk.Button(root, text="Close Browser", command=close_browser)
-close_browser_button.pack()
 
 # Create the "Insert Text from File" button
 insert_button = tk.Button(root, text="Insert Text from File", command=insert_text_from_file)
