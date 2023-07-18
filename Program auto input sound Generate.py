@@ -98,14 +98,16 @@ def insert_text_into_website(text):
             generate_button.click()
             
             # Wait for the page to refresh
-            time.sleep(10)  # Adjust the delay as needed
+            page_refresh_delay = int(page_refresh_entry.get())
+            time.sleep(page_refresh_delay)  # Adjust the delay as needed
             
             # Find and click the download button
             download_button = driver.find_element(By.XPATH, "//button[contains(., 'Download')]")
             download_button.click()
             
-             # Wait for the download to complete
-            time.sleep(10)  # Adjust the delay as needed
+            # Wait for the download to complete
+            download_delay = int(download_delay_entry.get())
+            time.sleep(download_delay)  # Adjust the delay as needed
             
             # Refresh the page
             driver.refresh()
@@ -114,10 +116,6 @@ def insert_text_into_website(text):
         except Exception as e:
             print("Exception:", str(e))
             messagebox.showerror("Error", "Failed to insert text into the website.")
-
-
-
-
 
 # Create the main window
 root = tk.Tk()
@@ -132,7 +130,6 @@ text_box.pack(pady=30)
 mic_monster_button = tk.Button(root, text="Open MicMonster", command=open_mic_monster)
 mic_monster_button.pack()
 
-
 # Create the "Insert Text from File" button
 insert_button = tk.Button(root, text="Insert Text from File", command=insert_text_from_file)
 insert_button.pack()
@@ -140,6 +137,24 @@ insert_button.pack()
 # Create the "Copy Text" button
 copy_button = tk.Button(root, text="Copy Text", command=copy_text)
 copy_button.pack()
+
+# Create a frame for the sleep durations
+sleep_frame = tk.Frame(root)
+sleep_frame.pack()
+
+# Create the label and entry for page refresh delay
+page_refresh_label = tk.Label(sleep_frame, text="Page Refresh Delay (seconds):")
+page_refresh_label.pack(side=tk.LEFT)
+page_refresh_entry = tk.Entry(sleep_frame)
+page_refresh_entry.pack(side=tk.LEFT)
+page_refresh_entry.insert(tk.END, "10")  # Set a default value
+
+# Create the label and entry for download delay
+download_delay_label = tk.Label(sleep_frame, text="Download Delay (seconds):")
+download_delay_label.pack(side=tk.LEFT)
+download_delay_entry = tk.Entry(sleep_frame)
+download_delay_entry.pack(side=tk.LEFT)
+download_delay_entry.insert(tk.END, "10")  # Set a default value
 
 # Start the GUI event loop
 root.mainloop()
