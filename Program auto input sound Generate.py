@@ -49,13 +49,15 @@ def get_files_in_folder(folder_path):
 def process_file(file_path):
     extension = os.path.splitext(file_path)[1].lower()
     try:
+        file_name = os.path.splitext(os.path.basename(file_path))[0]  # Extract the file name without extension
+        
         if extension == ".txt":
             with open(file_path, "r") as file:
                 text = file.read()
                 text_box.delete("1.0", tk.END)  # Clear the existing text
                 text_box.insert(tk.END, text)  # Insert the file contents into the text box
                 messagebox.showinfo("File Read", "Text file contents have been inserted into the text box.")
-                insert_text_into_website(text)  # Insert the text into the website
+                insert_text_into_website(text, file_name)  # Insert the text into the website with the file name
         elif extension == ".docx":
             doc = docx.Document(file_path)
             paragraphs = [paragraph.text for paragraph in doc.paragraphs]
@@ -63,7 +65,7 @@ def process_file(file_path):
             text_box.delete("1.0", tk.END)  # Clear the existing text
             text_box.insert(tk.END, text)  # Insert the file contents into the text box
             messagebox.showinfo("File Read", "DOCX file contents have been inserted into the text box.")
-            insert_text_into_website(text)  # Insert the text into the website
+            insert_text_into_website(text, file_name)  # Insert the text into the website with the file name
         elif extension == ".pdf":
             with open(file_path, "rb") as file:
                 pdf = PyPDF2.PdfReader(file)
@@ -72,9 +74,10 @@ def process_file(file_path):
                 text_box.delete("1.0", tk.END)  # Clear the existing text
                 text_box.insert(tk.END, text)  # Insert the file contents into the text box
                 messagebox.showinfo("File Read", "PDF file contents have been inserted into the text box.")
-                insert_text_into_website(text)  # Insert the text into the website
+                insert_text_into_website(text, file_name)  # Insert the text into the website with the file name
     except Exception as e:
         messagebox.showerror("Error", str(e))
+
 
 def copy_text():
     text = text_box.get("1.0", tk.END)
@@ -85,7 +88,7 @@ def copy_text():
         root.clipboard_append(text)
         messagebox.showinfo("Text Copied", "The text has been copied to the clipboard.")
 
-def insert_text_into_website(text):
+def insert_text_into_website(text, file_name):
     if text == "":
         messagebox.showwarning("Empty Text", "Please enter some text.")
     elif not driver:
@@ -126,6 +129,36 @@ def insert_text_into_website(text):
             time.sleep(download_delay)  # Adjust the delay as needed
 
             # Rename the downloaded file
+            rename_file(file_name)
+
+            # Refresh the page
+            driver.refresh()
+
+            messagebox.showinfo("Text Inserted", "The text has been inserted into the website.")
+        except NoSuchElementException as e:
+            print("Element Not Found:", str(e))
+            messagebox.showerror("Error", "Failed to locate elements on the website.")
+        except Exception as e:
+            print("Exception:", str(e))
+            messagebox.showerror("Error", "Failed to insert text into the website.")
+
+
+            # Click on the "Generate" button
+            generate_button.click()
+
+            # Wait for the page to refresh
+            page_refresh_delay = int(page_refresh_entry.get())
+            time.sleep(page_refresh_delay)  # Adjust the delay as needed
+
+            # Find and click the download button
+            download_button = driver.find_element(By.XPATH, "//button[contains(., 'Download')]")
+            download_button.click()
+
+            # Wait for the download to complete
+            download_delay = int(download_delay_entry.get())
+            time.sleep(download_delay)  # Adjust the delay as needed
+
+            # Rename the downloaded file
             rename_file(text)
 
             # Refresh the page
@@ -139,16 +172,28 @@ def insert_text_into_website(text):
             print("Exception:", str(e))
             messagebox.showerror("Error", "Failed to insert text into the website.")
 
-def rename_file(text):
+def rename_file(file_path):
     try:
         download_folder = os.path.expanduser("~") + "/Downloads/"
         latest_file = max([download_folder + f for f in os.listdir(download_folder)], key=os.path.getctime)
-        file_name, file_ext = os.path.splitext(latest_file)
-        new_file_name = text + file_ext
+        _, file_ext = os.path.splitext(latest_file)
+        file_name = os.path.splitext(os.path.basename(file_path))[0]
+        
+        new_file_name = file_name + file_ext
         new_file_path = os.path.join(save_path, new_file_name)
+        
+        # Check if the file already exists and append a suffix to avoid overwriting
+        suffix = 1
+        while os.path.exists(new_file_path):
+            new_file_name = f"{file_name} ({suffix}){file_ext}"
+            new_file_path = os.path.join(save_path, new_file_name)
+            suffix += 1
+        
         os.rename(latest_file, new_file_path)
     except Exception as e:
         print("Exception:", str(e))
+
+
 
 def select_save_path():
     global save_path
